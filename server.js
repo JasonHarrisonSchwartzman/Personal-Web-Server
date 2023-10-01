@@ -8,7 +8,7 @@ const fs = require('fs');
 const util = require('util');
 const exec = util.promisify(require('child_process').exec);
 
-app.use(cookieParser());
+app.use(cookieParser());//for cookies
 app.use(bodyParser.json());
 app.post("/jlang/code", async (req, res) => {
 
