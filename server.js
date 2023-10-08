@@ -74,29 +74,34 @@ app.post("/jlang/code", async (req, res) => {
 			console.error("error writing text to file");
 		}
 		else {
-			console.log("succesfully added text");
+			console.log("succesfully added text to file " + filePath);
 		}
 	});
 	executeWithTimeout(compile, timeOut * 1000)
 		.then((result) => {
 			if (result.stderr) {
-				console.log("err compiler " + result.stderr);
+				console.log("Compiler gives error: ");
+				console.log(result.stderr);
 				res.json({result: result.stderr});
 				return;
 			}
 			else {
+				console.log("Succesfully compiled " + filePath);
 				executeWithTimeout(run, timeOut * 1000)
 				.then((result) => {
+					console.log("Successfully ran " + binPath);
 					res.json({result: result.stdout});
 				})
 				.catch((error) => {
-					console.log("error run " + error.message);
+					console.log("Error running: ");
+					console.log(error.message);
 					res.json({result: error.message});
 				})
 			}
 		})
 		.catch((error) => {
-			console.log("error compile " + error.message);
+			console.log("Error compiling: ");
+			console.log(error.message);
 			res.json({result: error.message});
 		});
   
