@@ -6,12 +6,32 @@ const port = 3000;
 const fs = require('fs');
 
 const util = require('util');
-const exec = util.promisify(require('child_process').exec);
+const {exec} = require('child_process');
 
 app.use(cookieParser());
 app.use(bodyParser.json());
 app.post("/jlang/code", async (req, res) => {
+	function executeWithTimeout(command, timeout) {
+  		return new Promise((resolve, reject) => {
+    			const child = exec(command, (error, stdout, stderr) => { 
+				if (stderr) {
+					reject(new Error(stderr));
+				}
+				else {
+        				resolve({ stdout });
+      				}	
+    			});
 
+    			const timeoutId = setTimeout(() => {
+      				child.kill(); // Kill the child process if it runs for too long
+      				reject(new Error('Execution timed out'));
+    			}, timeout);
+
+    			child.on('exit', (code) => {
+      				clearTimeout(timeoutId); // Clear the timeout when the process exits
+    			});
+  		});
+	}
 
 	function generateUniqueID() {
 		const min = 100000000;
@@ -32,30 +52,62 @@ app.post("/jlang/code", async (req, res) => {
 		});
 		id = idNum;
 	}
-  const inputData = req.body.data;
-	const clientIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-console.log(req.headers);
-  const filePath = 'src/' + id + '.c';
-  const binPath = 'bin/' + id;
-  console.log('input data: ')
-  console.log(inputData); 
-  const compile = './jcc ' + filePath + ' ' + binPath;
+  	const inputData = req.body.data;
+	//const clientIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+	//console.log(req.headers);
+  	const filePath = 'src/' + id + '.c';
+  	const binPath = 'bin/' + id;
+  	//console.log('input data: ')
+  	//console.log(inputData); 
+  	const compile = './jcc ' + filePath + ' ' + binPath;
+	const run = binPath;
 
-  function convertToASCII(str) {
-	for (let i = 0; i < str.length; i++) {
-		console.log(str.charCodeAt(i) + ' ' + str.charAt(i));
+	const timeOut = 30;
+
+  	function convertToASCII(str) {
+		for (let i = 0; i < str.length; i++) {
+			console.log(str.charCodeAt(i) + ' ' + str.charAt(i));
+		}
 	}
-  }
-  const run = binPath;
-  
-  async function runCommands() {
-	  await fs.writeFile(filePath,inputData, async function(err){
+	await fs.writeFile(filePath,inputData, async function (err) {
 		if (err) {
 			console.error("error writing text to file");
 		}
-		 else {
-			 console.log("Text added to file successfully");
-		 }
+		else {
+			console.log("succesfully added text");
+		}
+	});
+	executeWithTimeout(compile, timeOut * 1000)
+		.then((result) => {
+			if (result.stderr) {
+				console.log("err compiler " + result.stderr);
+				res.json({result: result.stderr});
+				return;
+			}
+			else {
+				executeWithTimeout(run, timeOut * 1000)
+				.then((result) => {
+					res.json({result: result.stdout});
+				})
+				.catch((error) => {
+					console.log("error run " + error.message);
+					res.json({result: error.message});
+				})
+			}
+		})
+		.catch((error) => {
+			console.log("error compile " + error.message);
+			res.json({result: error.message});
+		});
+  
+  	/*async function runCommands() {
+	await fs.writeFile(filePath,inputData, async function(err){
+		if (err) {
+			console.error("error writing text to file");
+		}
+		else {
+			console.log("Text added to file successfully");
+		}
 	//console.log("begin commands");
 	  await exec(compile, async function(error, stdout, stderr) {
 	//	  console.log("begin compile");
@@ -86,7 +138,7 @@ console.log(req.headers);
 	  });
 	});
   }
-  await runCommands();
+  await runCommands();*/
 
 });
 
