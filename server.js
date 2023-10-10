@@ -15,7 +15,8 @@ app.post("/jlang/code", async (req, res) => {
   		return new Promise((resolve, reject) => {
     			const child = exec(command, (error, stdout, stderr) => { 
 				if (stderr) {
-					reject(new Error(stderr));
+					reject(error);
+					//reject(new Error(stderr));
 				}
 				else {
         				resolve({ stdout });
@@ -57,6 +58,7 @@ app.post("/jlang/code", async (req, res) => {
   			minute: '2-digit',
   			second: '2-digit',
   			timeZoneName: 'short',
+			timeZone: 'America/New_York'
 		};
 
 		// Format the date and time
@@ -133,7 +135,7 @@ app.post("/jlang/code", async (req, res) => {
 		})
 		.catch((error) => {
 			errorStream.write(getDate() + "| " + filePath + " Failed to compile. " + error.message.replace(/\n/g," ") + "\n");
-			return res.json({result: error.message});
+			return res.json({result: "Compilation failed. This may be at fault of the server. Try running it again and it should work."});
 		});
   
   	/*async function runCommands() {
