@@ -43,12 +43,40 @@ app.post("/jlang/code", async (req, res) => {
 	function determineValidCookie(cookie) {
 		return !isNaN(cookie);
 	}
+	function getDate() {
+		// Create a new Date object to get the current date and time
+		const now = new Date();
+
+		// Define options for formatting
+		const options = {
+ 			weekday: 'long',
+  			year: 'numeric',
+  			month: 'long',
+ 		 	day: 'numeric',
+  			hour: '2-digit',
+  			minute: '2-digit',
+  			second: '2-digit',
+  			timeZoneName: 'short',
+		};
+
+		// Format the date and time
+		const formattedDate = now.toLocaleDateString(undefined, options);
+
+// Print the formatted date and time
+		return `${formattedDate}`;
+
+	}
 	const cookie = req.cookies.ID;
 	let id;
+	const logFile = 'server.log';
+	const errorFile = 'error.log';
+	const logStream = fs.createWriteStream(logFile, {flags: 'a'});
+	const errorStream = fs.createWriteStream(errorFile, {flags:'a'});
+
 	if (cookie) {
 		if (!determineValidCookie(cookie)) {
-			console.log("Bad cookie");
-			return res.json({result:"Bad cookie"});
+			errorStream.write(getDate() + " | Bad cookie " + "\"" + cookie + "\"\n");
+			return res.json({result:"Server Error: Bad cookie"});
 		}
 		id = cookie;	
 	}
@@ -78,36 +106,33 @@ app.post("/jlang/code", async (req, res) => {
 	}
 	await fs.writeFile(filePath,inputData, async function (err) {
 		if (err) {
-			console.error("error writing text to file");
+			errorStream.write(getDate() + "| Error writing text to file " + filePath + "\n");
 		}
 		else {
-			console.log("succesfully added text to file " + filePath);
+			logStream.write(getDate() + "| Succesfully added text to file " + filePath + "\n");
 		}
 	});
 	executeWithTimeout(compile, timeOut * 1000)
 		.then((result) => {
 			if (result.stderr) {
-				console.log("Compiler gives error: ");
-				console.log(result.stderr);
+				logStream.write(getDate() + "| " + filePath + ": Compiler gives error: " + result.stderr.replace(/\n/g, " ") + "\n");
 				return res.json({result: result.stderr});
 			}
 			else {
-				console.log("Succesfully compiled " + filePath);
+				logStream.write(getDate() + "| " + filePath + " Successfully compiled.\n"); 
 				executeWithTimeout(run, timeOut * 1000)
 				.then((result) => {
-					console.log("Successfully ran " + binPath);
+					logStream.write(getDate() + "| " + binPath + " Successfully ran.\n");
 					return res.json({result: result.stdout});
 				})
 				.catch((error) => {
-					console.log("Error running: ");
-					console.log(error.message);
+					logStream.write(getDate() + "| " + binPath + " Failed to run. " + error.message.replace(/\n/g," ") + "\n");
 					return res.json({result: error.message});
 				})
 			}
 		})
 		.catch((error) => {
-			console.log("Error compiling: ");
-			console.log(error.message);
+			errorStream.write(getDate() + "| " + filePath + " Failed to compile. " + error.message.replace(/\n/g," ") + "\n");
 			return res.json({result: error.message});
 		});
   
