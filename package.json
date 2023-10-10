@@ -1,7 +1,7 @@
 {
 	"scripts": {
 		"start": "node server.js",
-		"end": "echo 'Stopping server.'"
+		"end": "pkill node"
 	},
 	"dependencies": {
 		"cookie-parser": "^1.4.6",

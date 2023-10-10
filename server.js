@@ -89,27 +89,26 @@ app.post("/jlang/code", async (req, res) => {
 			if (result.stderr) {
 				console.log("Compiler gives error: ");
 				console.log(result.stderr);
-				res.json({result: result.stderr});
-				return;
+				return res.json({result: result.stderr});
 			}
 			else {
 				console.log("Succesfully compiled " + filePath);
 				executeWithTimeout(run, timeOut * 1000)
 				.then((result) => {
 					console.log("Successfully ran " + binPath);
-					res.json({result: result.stdout});
+					return res.json({result: result.stdout});
 				})
 				.catch((error) => {
 					console.log("Error running: ");
 					console.log(error.message);
-					res.json({result: error.message});
+					return res.json({result: error.message});
 				})
 			}
 		})
 		.catch((error) => {
 			console.log("Error compiling: ");
 			console.log(error.message);
-			res.json({result: error.message});
+			return res.json({result: error.message});
 		});
   
   	/*async function runCommands() {
