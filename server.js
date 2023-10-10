@@ -40,9 +40,16 @@ app.post("/jlang/code", async (req, res) => {
 		const randomID = Math.floor(Math.random() * (max - min + 1)) + min;
 		return randomID.toString();
 	}
+	function determineValidCookie(cookie) {
+		return !isNaN(cookie);
+	}
 	const cookie = req.cookies.ID;
 	let id;
 	if (cookie) {
+		if (!determineValidCookie(cookie)) {
+			console.log("Bad cookie");
+			return res.json({result:"Bad cookie"});
+		}
 		id = cookie;	
 	}
 	else {
